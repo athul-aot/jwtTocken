@@ -4,6 +4,7 @@ const secretKey = "secret";
 //uuid creation
 const { v4: uuidv4 } = require("uuid");
 const crypto = require("crypto");
+const { log } = require("console");
 const uuidNumber = () => {
   const uuid = uuidv4();
   let uuidNum = (parseInt(uuid.replace(/-/g, ""), 16) % 80000) + 1;
@@ -23,7 +24,7 @@ const generateToken = (user) => {
 
 //testing users
 const userRegGet = (req, res) => {
-  res.send(users);
+  res.send(tasks);
 };
 
 //userRegistration
@@ -39,12 +40,11 @@ const userRegPost = (req, res) => {
   };
   users.push(data);
   console.log("dataa", username);
-  res.send("sucess");
+  res.json({message:"user registred sucessfully"})
 };
 
 //userLogin
 const userLoginPost = (req,res) => {
-    let userTaskList=[];
   const { username, password } = req.body;
   const currentUser=users.find(f=>f.username==username&& f.password==password);
   if (!currentUser) {
@@ -57,17 +57,17 @@ const userLoginPost = (req,res) => {
     fullname:currentUser.fullname,
   });
   console.log("json tocken",tocken)
-
-
-  const temp=tasks.filter(f=>currentUser.id==f.id);
-  if(temp){
-    userTaskList.push(temp)
-    }
-    
-    console.log('podaaa',userTaskList);
-    res.json({"tasks":userTaskList})
+  res.json({"tocken":tocken})
 
 };
+
+//userLoginGet
+const userLoginGet = (req, res) => {
+  const id=req.user.user.id;
+  const userTasks=tasks.filter(t=>t.id==id)
+  console.log("login dataa",userTasks);
+  res.json({message:"user logged in sucessfully","tasks":userTasks})
+}
 
 //task add
 const taskAddPost = (req, res) => {
@@ -90,26 +90,30 @@ const taskAddPost = (req, res) => {
 const userExistCheck = (req, res, next) => {
   const { username } = req.body;
   if (users.find((f) => f.username == username)) {
-    res.status(400).send("user already exists");
+    res.status(400).json({message:"user already exists"});
   } else {
     next();
   }
 };
 
 const verifyTocken=(req,res,next)=>{
+  console.log("kooiii",req.headers);
     const auth=req.headers.authorization;
     console.log("header:",auth);
     if (!auth) {
         return res.status(400).json({message:"tocken not found"}); 
     }
     //dont
-    const tockenData=jwt.verify(auth,secretKey);
-    console.log("tocken:",tockenData);
-    if (!tockenData) {
-        return res.status(400).json({message:"invalid tocken"});
-        }
-        req.user=tockenData;
-    next();
+    // const token = auth.split(" ")[1];
+  
+    jwt.verify(auth, secretKey, (err, decoded) => {
+      if (err) {
+          return res.status(403).json({ message: "Invalid token" });
+      }
+      console.log('vhbsvscd',decoded)
+      req.user = decoded; // Set decoded user data to req.user
+      next();
+  });
 }
 module.exports = {
   userRegGet,
@@ -117,5 +121,6 @@ module.exports = {
   userExistCheck,
   userLoginPost,
   taskAddPost,
-  verifyTocken
+  verifyTocken,
+  userLoginGet
 };
