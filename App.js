@@ -1,10 +1,10 @@
 const express=require('express');
+const router = require('./Routes/router');
 const app=express();
-const route=require('./Route');
+
 app.use(express.json());
 
-app.use('/',route)
-
+app.use(router)
 
 
 app.listen(3000,()=>{
